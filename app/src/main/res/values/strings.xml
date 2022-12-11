@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Veritas</string>
+    <string name="notice_text"><![CDATA[Our mobile app requires users to accept our screen recording privacy policy before using the app. This policy outlines how and why we collect and use screen recording data.]]></string>
 </resources>
