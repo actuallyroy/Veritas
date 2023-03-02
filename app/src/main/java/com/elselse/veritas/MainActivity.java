@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.google.android.material.button.MaterialButton;
@@ -31,11 +32,13 @@ import java.util.Date;
 
 public class MainActivity extends Activity {
     boolean b = false;
+    public static String query = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ImageView mask = findViewById(R.id.mask);
+        ImageButton cameraBtn = findViewById(R.id.cameraBtn);
         MaterialButton searchBtn = findViewById(R.id.searchBtn),
                 castBtn = findViewById(R.id.castBtn),
                 imageBtn = findViewById(R.id.imageBtn),
@@ -94,6 +97,26 @@ public class MainActivity extends Activity {
             ClipData.Item item= mydata.getItemAt(0);
             String mytext = String.valueOf(item.getText());
             Log.d("MainActivity", "Clipboard text: " + mytext);
+            query = mytext;
+            Intent intent = new Intent(MainActivity.this, SearchActivity.class);
+            startActivity(intent);
+        });
+
+        searchField.setEndIconOnClickListener(v -> {
+            b = false;
+            searchField.animate().y(1000).setDuration(500).start();
+            mask.setVisibility(View.GONE);
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(searchField.getWindowToken(), 0);
+            query = searchField.getEditText().getText().toString();
+            Log.d("MainActivity", "Search button clicked");
+            Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+            startActivity(intent);
+        });
+
+        cameraBtn.setOnClickListener(v -> {
+            Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+            startActivityForResult(intent, 2);
         });
 
     }
@@ -137,6 +160,34 @@ public class MainActivity extends Activity {
                             }
                         });
                         Log.d("MainActivity", text[0]);
+                        query = text[0];
+                        Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+                        startActivity(intent);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.d("MainActivity", e.getMessage());
+                    });
+        }
+
+        if(requestCode == 2 && resultCode == RESULT_OK){
+            Bitmap bitmap = (Bitmap) data.getExtras().get("data");
+            InputImage image = InputImage.fromBitmap(bitmap, 0);
+            TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+            recognizer.process(image)
+                    .addOnSuccessListener(visionText -> {
+                        final int[] max = {0};
+                        final String[] text = {""};
+                        visionText.getTextBlocks().forEach(block -> {
+                            int p = (block.getBoundingBox().height() * block.getBoundingBox().width())/block.getText().length();
+                            if (p > max[0]) {
+                                max[0] = p;
+                                text[0] = block.getText();
+                            }
+                        });
+                        Log.d("MainActivity", text[0]);
+                        query = text[0];
+                        Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+                        startActivity(intent);
                     })
                     .addOnFailureListener(e -> {
                         Log.d("MainActivity", e.getMessage());
